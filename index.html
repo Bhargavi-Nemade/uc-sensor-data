@@ -2,29 +2,35 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iPhone Sensor Collector</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
-        button { padding: 10px 20px; font-size: 16px; margin: 10px; cursor: pointer; }
-        textarea { width: 100%; height: 200px; margin-top: 15px; font-family: monospace; }
+        body { font-family: Arial, sans-serif; padding: 20px; text-align: center; background-color: #f4f4f9; }
+        button { padding: 12px 24px; font-size: 16px; margin: 10px; cursor: pointer; border: none; border-radius: 5px; background-color: #007bff; color: white; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #stopBtn { background-color: #dc3545; }
+        textarea { width: 100%; height: 180px; margin-top: 15px; font-family: monospace; font-size: 12px; padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
     </style>
 </head>
 <body>
-    <h2>Urban Sensor Data Collector</h2>
-    <p>Target: >1,000 data points</p>
-    <button id="startBtn">Start Recording</button>
-    <button id="stopBtn" disabled>Stop Recording</button>
-    <p>Data points collected: <span id="counter">0</span></p>
+    <div class="card">
+        <h2>Urban Sensor Data Collector</h2>
+        <p>Target: &gt;1,000 data points</p>
+        <button id="startBtn">Start Recording</button>
+        <button id="stopBtn" disabled>Stop & Download CSV</button>
+        <p>Data points collected: <span id="counter" style="font-weight: bold; color: #007bff;">0</span></p>
 
-    <h3>Your CSV Data (Copy below):</h3>
-    <textarea id="output" placeholder="Your CSV data will appear here once you stop recording..."></textarea>
+        <h3>CSV Data Preview:</h3>
+        <textarea id="output" placeholder="Your CSV data will appear here once you stop recording..."></textarea>
+    </div>
 
     <script>
         let sensorData = [];
         let isRecording = false;
 
         document.getElementById('startBtn').addEventListener('click', async () => {
-            // iOS requires explicit permission for motion sensors
+            // iOS permission request for motion sensors
             if (typeof DeviceMotionEvent.requestPermission === 'function') {
                 try {
                     const response = await DeviceMotionEvent.requestPermission();
@@ -41,7 +47,7 @@
             isRecording = true;
             document.getElementById('startBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
-            document.getElementById('output').value = "Recording in progress... Move your phone!";
+            document.getElementById('output').value = "Recording in progress... Move your phone around!";
 
             window.addEventListener('devicemotion', handleMotion);
         });
@@ -50,27 +56,29 @@
             if (!isRecording) return;
             
             const timestamp = new Date().toISOString();
-            // Fallback to 0 if acceleration values are null
             const x = event.acceleration.x ? event.acceleration.x.toFixed(4) : 0;
             const y = event.acceleration.y ? event.acceleration.y.toFixed(4) : 0;
             const z = event.acceleration.z ? event.acceleration.z.toFixed(4) : 0;
 
             sensorData.push([timestamp, x, y, z]);
-            document.getElementById('counter').innerText = sensorData.length - 1;
+            document.getElementById('counterстые' || 'counter').innerText = sensorData.length - 1;
         }
 
         document.getElementById('stopBtn').addEventListener('click', () => {
             isRecording = false;
             window.removeEventListener('devicemotion', handleMotion);
-            
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
-
-            // Convert array to CSV text string
             let csvContent = sensorData.map(e => e.join(",")).join("\n");
-            
-            // Display it in the text area so you can easily copy it
             document.getElementById('output').value = csvContent;
+            let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            let url = URL.createObjectURL(blob);
+            let link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'iphone_sensor_data.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
     </script>
 </body>
