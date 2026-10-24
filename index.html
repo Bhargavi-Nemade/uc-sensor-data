@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>iPhone Sensor Collector</title>
+</head>
+<body>
+    <h2>Urban Sensor Data Collector</h2>
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop & Download CSV</button>
+    <p>Data points collected: <span id="counter">0</span></p>
+
+    <script>
+        let sensorData = [];
+        let isRecording = false;
+
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            // iOS requires permission for motion sensors
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                const response = await DeviceMotionEvent.requestPermission();
+                if (response !== 'granted') {
+                    alert("Sensor permission denied");
+                    return;
+                }
+            }
+            
+            sensorData = [['timestamp', 'accel_x', 'accel_y', 'accel_z']];
+            isRecording = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+
+            window.addEventListener('devicemotion', handleMotion);
+        });
+
+        function handleMotion(event) {
+            if (!isRecording) return;
+            
+            const timestamp = new Date().toISOString();
+            const x = event.acceleration.x || 0;
+            const y = event.acceleration.y || 0;
+            const z = event.acceleration.z || 0;
+
+            sensorData.push([timestamp, x, y, z]);
+            document.getElementById('counter').innerText = sensorData.length - 1;
+        }
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            isRecording = false;
+            window.removeEventListener('devicemotion', handleMotion);
+
+            // Convert to CSV
+            let csvContent = "data:text/csv;charset=utf-8," 
+                + sensorData.map(e => e.join(",")).join("\n");
+            
+            let encodedUri = encodeURI(csvContent);
+            let link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "iphone_sensor_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    </script>
+</body>
+</html>
