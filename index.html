@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iPhone Sensor Collector</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; text-align: center; background-color: #f4f4f9; }
         button { padding: 12px 24px; font-size: 16px; margin: 10px; cursor: pointer; border: none; border-radius: 5px; background-color: #007bff; color: white; }
@@ -26,6 +28,17 @@
     </div>
 
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAheLONGsLD_1Q-mNS0Wqyu8Elgic1CnWo",
+            authDomain: "urbancompsensorapp.firebaseapp.com",
+            projectId: "urbancompsensorapp",
+            storageBucket: "urbancompsensorapp.firebasestorage.app",
+            messagingSenderId: "1011731207001",
+            appId: "1:1011731207001:web:4b515fc3a4dd06fe7b7248",
+            measurementId: "G-RPT20JMLM2"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
         let sensorData = [];
         let isRecording = false;
 
@@ -50,14 +63,25 @@
             window.addEventListener('devicemotion', handleMotion);
         });
 
-        function handleMotion(event) {
+        async function handleMotion(event) {
             if (!isRecording) return;
             const timestamp = new Date().toISOString();
             const x = event.acceleration.x ? event.acceleration.x.toFixed(4) : 0;
             const y = event.acceleration.y ? event.acceleration.y.toFixed(4) : 0;
             const z = event.acceleration.z ? event.acceleration.z.toFixed(4) : 0;
-            sensorData.push([timestamp, x, y, z]);
-            document.getElementById('counter').innerText = sensorData.length - 1;
+            dataCount++;
+            document.getElementById('counter').innerText = dataCount;
+            try {
+                await db.collection("sensor_logs").add({
+                    timestamp: timestamp,
+                    accel_x: parseFloat(x),
+                    accel_y: parseFloat(y),
+                    accel_z: parseFloat(z),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (error) {
+                console.error("Error writing document to Firestore: ", error);
+            }
         }
 
         document.getElementById('stopBtn').addEventListener('click', () => {
