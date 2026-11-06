@@ -90,21 +90,37 @@
             }
         }
         
-        async function fetchAndPushOpenData() {
+async function fetchAndPushOpenData() {
             if (!isRecording) return;
             try {
-                const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.3498&longitude=-6.2603&current=temperature_2m,relative_humidity_2m,wind_speed_10m');
-                const data = await response.json();
-                const weatherPayload = {
+                const weatherUrl = "https://api.open-meteo.com/v1/forecast?latitude=53.3498&longitude=-6.2603&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl&timezone=UTC";
+                const aqUrl = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=53.3498&longitude=-6.2603&current=european_aqi,pm2_5,pm10,nitrogen_dioxide,ozone&timezone=UTC";
+                const [weatherRes, aqRes] = await Promise.all([
+                    fetch(weatherUrl),
+                    fetch(aqUrl)
+                ]);
+                const weatherData = await weatherRes.json();
+                const aqData = await aqRes.json();
+                const combinedPayload = {
                     timestamp: new Date().toISOString(),
-                    temperature_c: data.current.temperature_2m,
-                    humidity_percent: data.current.relative_humidity_2m,
-                    wind_speed: data.current.wind_speed_10m,
-                    source: "Open-Meteo Dublin Open Data",
+                    temperature_c: weatherData.current?.temperature_2m ?? null,
+                    apparent_temperature_c: weatherData.current?.apparent_temperature ?? null,
+                    humidity_percent: weatherData.current?.relative_humidity_2m ?? null,
+                    precipitation: weatherData.current?.precipitation ?? null,
+                    wind_speed: weatherData.current?.wind_speed_10m ?? null,
+                    wind_direction: weatherData.current?.wind_direction_10m ?? null,
+                    wind_gusts: weatherData.current?.wind_gusts_10m ?? null,
+                    pressure_msl: weatherData.current?.pressure_msl ?? null,
+                    european_aqi: aqData.current?.european_aqi ?? null,
+                    pm2_5: aqData.current?.pm2_5 ?? null,
+                    pm10: aqData.current?.pm10 ?? null,
+                    nitrogen_dioxide: aqData.current?.nitrogen_dioxide ?? null,
+                    ozone: aqData.current?.ozone ?? null,
+                    source: "Open-Meteo Weather & Air Quality",
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
-                await db.collection("open_weather_logs").add(weatherPayload);
-                console.log("Weather Data successfully pushed.");
+                await db.collection("open_weather_logs").add(combinedPayload);
+                console.log("Weather & Air Quality data successfully pushed.");
             } catch (error) {
                 console.error("Error fetching open data:", error);
             }
