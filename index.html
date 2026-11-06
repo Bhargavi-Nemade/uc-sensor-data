@@ -43,7 +43,7 @@
         let sensorData = [];
         let isRecording = false;
         let dataCount = 0;
-        let openDataTime;
+        let openDataInterval;
 
         document.getElementById('startBtn').addEventListener('click', async () => {
             if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -65,7 +65,7 @@
             document.getElementById('output').value = "Recording & streaming data";
             window.addEventListener('devicemotion', handleMotion);
             fetchAndPushOpenData();
-            openDataTime = setInterval(fetchAndPushOpenData, 30000);
+            openDataInterval = setInterval(fetchAndPushOpenData, 30000);
         });
 
         async function handleMotion(event) {
@@ -125,13 +125,13 @@ async function fetchAndPushOpenData() {
                 console.error("Error fetching open data:", error);
             }
         }
-        let openDataTime = setInterval(fetchAndPushOpenData, 30000);
-        clearInterval(openDataTime);
+        let openDataInterval = setInterval(fetchAndPushOpenData, 30000);
+        clearInterval(openDataInterval);
 
         document.getElementById('stopBtn').addEventListener('click', () => {
             isRecording = false;
             window.removeEventListener('devicemotion', handleMotion);
-            clearInterval(openDataTime);
+            clearInterval(openDataInterval);
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
             let csvContent = sensorData.map(e => e.join(",")).join("\n");
