@@ -125,8 +125,6 @@
                 console.error("Error fetching open data:", error);
             }
         }
-        let openDataInterval = setInterval(fetchAndPushOpenData, 30000);
-        clearInterval(openDataInterval);
 
         document.getElementById('stopBtn').addEventListener('click', () => {
             isRecording = false;
