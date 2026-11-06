@@ -1,4 +1,3 @@
-<!-- refresh -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,13 +18,13 @@
 <body>
     <div class="card">
         <h2>Urban Sensor Data Collector</h2>
-        <p>Target: &gt;1,000 data points</p>
+        <p>Target: &gt;1,000 data points (Streaming Live)</p>
         <button id="startBtn">Start Recording</button>
-        <button id="stopBtn" disabled>Stop & Download CSV</button>
+        <button id="stopBtn" disabled>Stop Recording</button>
         <p>Data points collected: <span id="counter" style="font-weight: bold; color: #007bff;">0</span></p>
 
-        <h3>CSV Data Preview:</h3>
-        <textarea id="output" placeholder="Your CSV data will appear here once you stop recording..."></textarea>
+        <h3>Status / Log Preview:</h3>
+        <textarea id="output" placeholder="Status logs will appear here once you start recording..."></textarea>
     </div>
 
     <script>
@@ -38,10 +37,13 @@
             appId: "1:1011731207001:web:4b515fc3a4dd06fe7b7248",
             measurementId: "G-RPT20JMLM2"
         };
+        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+
         let sensorData = [];
         let isRecording = false;
+        let dataCount = 0;
 
         document.getElementById('startBtn').addEventListener('click', async () => {
             if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -56,11 +58,12 @@
                 }
             }
             
+            dataCount = 0;
             sensorData = [['timestamp', 'accel_x', 'accel_y', 'accel_z']];
             isRecording = true;
             document.getElementById('startBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
-            document.getElementById('output').value = "Recording in progress... Move your phone around!";
+            document.getElementById('output').value = "Recording & streaming data to Firebase...";
             window.addEventListener('devicemotion', handleMotion);
         });
 
@@ -70,8 +73,11 @@
             const x = event.acceleration.x ? event.acceleration.x.toFixed(4) : 0;
             const y = event.acceleration.y ? event.acceleration.y.toFixed(4) : 0;
             const z = event.acceleration.z ? event.acceleration.z.toFixed(4) : 0;
+            
             dataCount++;
+            sensorData.push([timestamp, x, y, z]); // FIXED: Track data locally for optional backup CSV
             document.getElementById('counter').innerText = dataCount;
+
             try {
                 await db.collection("sensor_logs").add({
                     timestamp: timestamp,
@@ -90,8 +96,10 @@
             window.removeEventListener('devicemotion', handleMotion);
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
+            
             let csvContent = sensorData.map(e => e.join(",")).join("\n");
-            document.getElementById('output').value = csvContent;
+            document.getElementById('output').value = `Stopped. Streamed ${dataCount} points to Firestore.`;
+            
             let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             let url = URL.createObjectURL(blob);
             let link = document.createElement('a');
