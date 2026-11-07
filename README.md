@@ -6,7 +6,7 @@ The sensor data collection tool is hosted and publicly accessible via GitHub Pag
 
 ---
 
-## 📱 Testing & Data Collection Instructions
+## Testing & Data Collection Instructions
 
 ### Prerequisites
 - An iPhone (iOS 13+) running Safari.
